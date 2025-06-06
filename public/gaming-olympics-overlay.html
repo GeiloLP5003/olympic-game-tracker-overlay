@@ -1,0 +1,530 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaming Olympics Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            color: white;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .overlay-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            height: 600px;
+            background: rgba(15, 23, 42, 0.85);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #60a5fa;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .progress {
+            font-size: 16px;
+            color: #cbd5e1;
+            background: rgba(30, 41, 59, 0.6);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timer-section {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(30, 41, 59, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timer {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fbbf24;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .timer-label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .games-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .games-list {
+            position: absolute;
+            width: 100%;
+            padding: 15px;
+            transition: transform 0.1s linear;
+        }
+
+        .game-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: rgba(51, 65, 85, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .game-item.completed {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #86efac;
+        }
+
+        .game-item.completed::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+        }
+
+        .game-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .game-item.completed .game-checkbox {
+            background: #22c55e;
+            border-color: #22c55e;
+        }
+
+        .game-checkbox::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.2s ease;
+        }
+
+        .game-item.completed .game-checkbox::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .game-name {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            width: 4px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .scroll-thumb {
+            width: 100%;
+            height: 20%;
+            background: rgba(96, 165, 250, 0.6);
+            border-radius: 2px;
+            transition: transform 0.1s linear;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .timer.warning {
+            color: #f97316;
+            animation: pulse 1s infinite;
+        }
+
+        .timer.critical {
+            color: #ef4444;
+            animation: pulse 0.5s infinite;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1080px) {
+            .overlay-container {
+                width: 300px;
+                height: 500px;
+                padding: 15px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .timer {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <div class="header">
+            <div class="title" id="title">Olympiade</div>
+            <div class="progress" id="progress">0/9</div>
+        </div>
+        
+        <div class="timer-section">
+            <div class="timer" id="timer">10:00</div>
+            <div class="timer-label">Zeit verbleibt</div>
+        </div>
+        
+        <div class="games-container">
+            <div class="games-list" id="gamesList"></div>
+            <div class="scroll-indicator">
+                <div class="scroll-thumb" id="scrollThumb"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🎮 CONFIGURATION SECTION - Customize these values
+        const CONFIG = {
+            title: "Olympiade",
+            timerDuration: 10 * 60, // 10 minutes in seconds
+            scrollSpeed: 0.5, // pixels per frame
+            pauseDuration: 2000, // milliseconds to pause at top/bottom
+            
+            games: [
+                "Apex Legends",
+                "Codenames", 
+                "Minecraft Speedrun",
+                "Fall Guys",
+                "Geo Bingo",
+                "Rocket League",
+                "Stadt Land Fluss",
+                "Wörter assoziieren",
+                "Auf einem Bein stehen"
+            ],
+            
+            // Mark completed games here
+            completedGames: [
+                "Codenames",
+                "Fall Guys"
+            ]
+        };
+
+        // 🕐 TIMER FUNCTIONALITY
+        class GameTimer {
+            constructor(duration) {
+                this.duration = duration;
+                this.remaining = duration;
+                this.isRunning = false;
+                this.interval = null;
+                this.element = document.getElementById('timer');
+            }
+
+            start() {
+                if (this.isRunning) return;
+                this.isRunning = true;
+                this.interval = setInterval(() => {
+                    this.remaining--;
+                    this.updateDisplay();
+                    
+                    if (this.remaining <= 0) {
+                        this.stop();
+                        this.onTimeUp();
+                    }
+                }, 1000);
+            }
+
+            stop() {
+                this.isRunning = false;
+                if (this.interval) {
+                    clearInterval(this.interval);
+                    this.interval = null;
+                }
+            }
+
+            reset() {
+                this.stop();
+                this.remaining = this.duration;
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                const minutes = Math.floor(this.remaining / 60);
+                const seconds = this.remaining % 60;
+                const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                this.element.textContent = display;
+
+                // Visual warnings
+                this.element.className = 'timer';
+                if (this.remaining <= 60) {
+                    this.element.className = 'timer critical';
+                } else if (this.remaining <= 300) {
+                    this.element.className = 'timer warning';
+                }
+            }
+
+            onTimeUp() {
+                console.log('⏰ Timer finished!');
+                // You can add custom logic here when timer ends
+            }
+        }
+
+        // 📜 SCROLLING GAMES LIST
+        class ScrollingGamesList {
+            constructor() {
+                this.container = document.querySelector('.games-container');
+                this.list = document.getElementById('gamesList');
+                this.scrollThumb = document.getElementById('scrollThumb');
+                this.scrollPosition = 0;
+                this.scrollDirection = 1; // 1 for down, -1 for up
+                this.isPaused = false;
+                this.pauseTimeout = null;
+                this.maxScroll = 0;
+                
+                this.init();
+            }
+
+            init() {
+                this.renderGames();
+                this.calculateMaxScroll();
+                this.startScrolling();
+            }
+
+            renderGames() {
+                this.list.innerHTML = CONFIG.games.map(game => {
+                    const isCompleted = CONFIG.completedGames.includes(game);
+                    return `
+                        <div class="game-item ${isCompleted ? 'completed' : ''}">
+                            <div class="game-checkbox"></div>
+                            <div class="game-name">${game}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            calculateMaxScroll() {
+                const containerHeight = this.container.clientHeight;
+                const listHeight = this.list.scrollHeight;
+                this.maxScroll = Math.max(0, listHeight - containerHeight + 30); // 30px padding
+            }
+
+            startScrolling() {
+                if (this.maxScroll <= 0) return; // Don't scroll if content fits
+
+                const scroll = () => {
+                    if (this.isPaused) {
+                        requestAnimationFrame(scroll);
+                        return;
+                    }
+
+                    this.scrollPosition += CONFIG.scrollSpeed * this.scrollDirection;
+
+                    // Check boundaries and pause
+                    if (this.scrollPosition >= this.maxScroll && this.scrollDirection === 1) {
+                        this.scrollPosition = this.maxScroll;
+                        this.pauseAndReverse();
+                    } else if (this.scrollPosition <= 0 && this.scrollDirection === -1) {
+                        this.scrollPosition = 0;
+                        this.pauseAndReverse();
+                    }
+
+                    this.updatePosition();
+                    requestAnimationFrame(scroll);
+                };
+
+                requestAnimationFrame(scroll);
+            }
+
+            pauseAndReverse() {
+                this.isPaused = true;
+                if (this.pauseTimeout) clearTimeout(this.pauseTimeout);
+                
+                this.pauseTimeout = setTimeout(() => {
+                    this.scrollDirection *= -1;
+                    this.isPaused = false;
+                }, CONFIG.pauseDuration);
+            }
+
+            updatePosition() {
+                this.list.style.transform = `translateY(-${this.scrollPosition}px)`;
+                
+                // Update scroll indicator
+                if (this.maxScroll > 0) {
+                    const thumbPosition = (this.scrollPosition / this.maxScroll) * 80; // 80% of indicator height
+                    this.scrollThumb.style.transform = `translateY(${thumbPosition}px)`;
+                }
+            }
+
+            markGameCompleted(gameName) {
+                if (!CONFIG.completedGames.includes(gameName)) {
+                    CONFIG.completedGames.push(gameName);
+                    this.renderGames();
+                    this.updateProgress();
+                }
+            }
+
+            updateProgress() {
+                const completed = CONFIG.completedGames.length;
+                const total = CONFIG.games.length;
+                document.getElementById('progress').textContent = `${completed}/${total}`;
+            }
+        }
+
+        // 🚀 INITIALIZATION
+        let timer;
+        let gamesList;
+
+        function initializeOverlay() {
+            // Set title
+            document.getElementById('title').textContent = CONFIG.title;
+            
+            // Initialize timer
+            timer = new GameTimer(CONFIG.timerDuration);
+            timer.updateDisplay();
+            timer.start(); // Auto-start timer
+            
+            // Initialize games list
+            gamesList = new ScrollingGamesList();
+            gamesList.updateProgress();
+            
+            console.log('🎮 Gaming Olympics Overlay initialized!');
+        }
+
+        // 🎛️ CONTROL FUNCTIONS - Use these in browser console or via URL parameters
+        window.overlayControls = {
+            // Timer controls
+            startTimer: () => timer.start(),
+            stopTimer: () => timer.stop(),
+            resetTimer: () => timer.reset(),
+            setTimer: (minutes) => {
+                timer.duration = minutes * 60;
+                timer.reset();
+            },
+            
+            // Game controls
+            markCompleted: (gameName) => gamesList.markGameCompleted(gameName),
+            resetGames: () => {
+                CONFIG.completedGames.length = 0;
+                gamesList.renderGames();
+                gamesList.updateProgress();
+            },
+            
+            // Display controls
+            setTitle: (title) => {
+                CONFIG.title = title;
+                document.getElementById('title').textContent = title;
+            }
+        };
+
+        // 🔗 URL PARAMETER SUPPORT
+        function parseUrlParameters() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if (params.has('title')) {
+                CONFIG.title = params.get('title');
+            }
+            
+            if (params.has('timer')) {
+                CONFIG.timerDuration = parseInt(params.get('timer')) * 60;
+            }
+            
+            if (params.has('completed')) {
+                CONFIG.completedGames = params.get('completed').split(',').map(s => s.trim());
+            }
+        }
+
+        // 🎬 START THE SHOW
+        document.addEventListener('DOMContentLoaded', () => {
+            parseUrlParameters();
+            initializeOverlay();
+        });
+
+        // 🎮 KEYBOARD SHORTCUTS (for testing)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') { // Spacebar to pause/resume timer
+                e.preventDefault();
+                if (timer.isRunning) {
+                    timer.stop();
+                } else {
+                    timer.start();
+                }
+            } else if (e.key === 'r') { // R to reset timer
+                timer.reset();
+            }
+        });
+
+        // 🔧 PERFORMANCE OPTIMIZATION
+        // Reduce animations when window is not visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                CONFIG.scrollSpeed = CONFIG.scrollSpeed * 0.5;
+            } else {
+                CONFIG.scrollSpeed = 0.5; // Reset to original speed
+            }
+        });
+    </script>
+</body>
+</html>
